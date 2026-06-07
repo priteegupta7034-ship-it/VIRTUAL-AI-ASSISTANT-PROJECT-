@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shifra - Virtual Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Base Setup */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .assistant-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        /* Avatar Container & Glowing Layer styling */
+        .avatar-box {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Applies the exact pink and cyan neon aura look from your video reference */
+            filter: drop-shadow(0 0 15px #ff007f) drop-shadow(0 0 35px #00f0ff);
+        }
+
+        /* Smooth floating animation for the virtual identity graphic */
+        .avatar-img.idle {
+            animation: floatAnimation 5s ease-in-out infinite;
+        }
+
+        .avatar-img.active {
+            animation: pulseAnimation 1.5s infinite alternate, floatAnimation 3s ease-in-out infinite;
+        }
+
+        /* Typography Styling */
+        .title-text {
+            font-size: 2.1rem;
+            font-weight: 700;
+            margin-bottom: 35px;
+            letter-spacing: 0.5px;
+        }
+
+        .pink-text {
+            color: #ff3399;
+            text-shadow: 0 0 15px rgba(255, 51, 153, 0.6);
+        }
+
+        .cyan-text {
+            color: #00e5ff;
+            text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+        }
+
+        /* Pill-shaped Gradient Interactive Action Button */
+        .mic-btn {
+            background: linear-gradient(90deg, #1d72b8 0%, #b81d7a 100%);
+            border: none;
+            color: #ffffff;
+            padding: 15px 45px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 0 15px rgba(29, 114, 184, 0.4), 0 0 25px rgba(184, 29, 122, 0.4);
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 25px rgba(29, 114, 184, 0.7), 0 0 40px rgba(184, 29, 122, 0.7);
+        }
+
+        .mic-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Subtitle status output logs */
+        .status-display {
+            margin-top: 25px;
+            font-size: 0.95rem;
+            color: #666666;
+            min-height: 24px;
+            font-style: italic;
+        }
+
+        /* Dynamic System Animations */
+        @keyframes floatAnimation {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        @keyframes pulseAnimation {
+            0% {
+                filter: drop-shadow(0 0 15px #ff007f) drop-shadow(0 0 35px #00f0ff);
+            }
+
+            100% {
+                filter: drop-shadow(0 0 25px #ff007f) drop-shadow(0 0 55px #00f0ff);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="assistant-container">
+        <div class="avatar-box">
+            <img src="https://cdna.artstation.com/p/assets/images/images/077/910/016/smaller_square/joseph-burke-the-singularity2.jpg?1720671857"
+                alt="Shifra Virtual Identity" class="avatar-img idle" id="assistantAvatar">
+        </div>
+
+        <h1 class="title-text">
+            I'm <span class="pink-text">Shifra</span>, Your <span class="cyan-text">Virtual Assistant</span>
+        </h1>
+
+        <button class="mic-btn" id="voiceTriggerBtn">
+            <i class="fa-solid fa-microphone" id="micStatusIcon"></i> Click here to talk to me
+        </button>
+
+        <div class="status-display" id="systemLog">Ready to listen</div>
+    </div>
+
+    <script>
+        const voiceTriggerBtn = document.getElementById('voiceTriggerBtn');
+        const systemLog = document.getElementById('systemLog');
+        const assistantAvatar = document.getElementById('assistantAvatar');
+        const micStatusIcon = document.getElementById('micStatusIcon');
+
+        // Check compatibility with Web Speech Recognition Engine
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            // Trigger active speech recognition via UI click event
+            voiceTriggerBtn.addEventListener('click', () => {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.log("Speech service engine is already executing.");
+                }
+            });
+
+            // Handle listener active states
+            recognition.onstart = () => {
+                systemLog.innerText = "Listening...";
+                systemLog.style.color = "#00e5ff";
+                assistantAvatar.className = "avatar-img active";
+                micStatusIcon.className = "fa-solid fa-circle-notch fa-spin"; // Turn mic into processing spinner
+            };
+
+            // Parse valid audio input translates to logic parser
+            recognition.onresult = (event) => {
+                const userSpeechIntent = event.results[0][0].transcript.toLowerCase();
+                systemLog.innerText = `You said: "${userSpeechIntent}"`;
+                systemLog.style.color = "#ffffff";
+
+                executeAssistantCommand(userSpeechIntent);
+            };
+
+            // Reset UI properties when session shuts down
+            recognition.onend = () => {
+                assistantAvatar.className = "avatar-img idle";
+                micStatusIcon.className = "fa-solid fa-microphone";
+                if (systemLog.innerText === "Listening...") {
+                    systemLog.innerText = "Ready to listen";
+                    systemLog.style.color = "#666";
+                }
+            };
+
+            recognition.onerror = (err) => {
+                systemLog.innerText = "Error capturing speech stream details.";
+                systemLog.style.color = "#ff3399";
+            };
+
+        } else {
+            systemLog.innerText = "Speech API platform profiles are unavailable on this interface.";
+            voiceTriggerBtn.disabled = true;
+            voiceTriggerBtn.style.opacity = "0.4";
+        }
+
+        // Voice Engine Synthesis (TTS Audio Out Output Module)
+        function generateVoiceReply(responseText) {
+            window.speechSynthesis.cancel(); // Clears any stacked voices
+            const textToSpeechEngine = new SpeechSynthesisUtterance(responseText);
+            textToSpeechEngine.pitch = 1.1;
+            textToSpeechEngine.rate = 1.0;
+
+            textToSpeechEngine.onstart = () => {
+                assistantAvatar.className = "avatar-img active";
+            };
+            textToSpeechEngine.onend = () => {
+                assistantAvatar.className = "avatar-img idle";
+            };
+
+            window.speechSynthesis.speak(textToSpeechEngine);
+        }
+
+        // Processing Input Routing Table
+        function executeAssistantCommand(processedInput) {
+            if (processedInput.includes('hello') || processedInput.includes('hi')) {
+                generateVoiceReply("Hello! I am Shifra. How can I assist you today?");
+            }
+            else if (processedInput.includes('your name')) {
+                generateVoiceReply("My name is Shifra, your virtual assistant.");
+            }
+            else if (processedInput.includes('time')) {
+                const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                generateVoiceReply(`The time is ${currentTime}`);
+            }
+            else if (processedInput.includes('open google')) {
+                generateVoiceReply("Opening Google Search Engine.");
+                window.open('https://www.google.com', '_blank');
+            }
+            else if (processedInput.includes('open youtube')) {
+                generateVoiceReply("Opening YouTube.");
+                window.open('https://www.youtube.com', '_blank');
+            }
+            else {
+                generateVoiceReply("Command unmapped. Searching Google for " + processedInput);
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(processedInput)}`, '_blank');
+            }
+        }
+    </script>
+</body>
+
+</html>
